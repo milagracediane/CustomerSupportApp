@@ -97,7 +97,7 @@ Scan the QR code using Expo Go to open the application on a compatible mobile de
 ## Developers
 
 - Milagrace Diane Rubio Obongen
-- Juliana [Add Last Name]
+- Juliana Jane E. Jumawan
 
 ## Project Repository
 
