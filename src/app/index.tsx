@@ -29,42 +29,69 @@ export default function HomeScreen() {
   const [message, setMessage] = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-const showMessage = (title: string, message: string) => {
-  if (Platform.OS === 'web') {
-    window.alert(`${title}\n\n${message}`);
-  } else {
-    Alert.alert(title, message);
-  }
-};
 
+  const showMessage = (title: string, message: string) => {
+    if (Platform.OS === 'web') {
+      window.alert(`${title}\n\n${message}`);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
 
-const uploadToCloudinary = async (uri: string) => {
-  const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME;
-  const uploadPreset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+  const uploadToCloudinary = async (uri: string) => {
+    const cloudName = process.env.EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = process.env.EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
-  if (!cloudName || !uploadPreset) {
-    throw new Error('Cloudinary settings are missing.');
-  }
+    if (!cloudName || !uploadPreset) {
+      throw new Error('Cloudinary settings are missing.');
+    }
 
-  if (Platform.OS === 'web') {
-    const imageResponse = await fetch(uri);
-    const imageBlob = await imageResponse.blob();
+    if (Platform.OS === 'web') {
+      const imageResponse = await fetch(uri);
+      const imageBlob = await imageResponse.blob();
 
-    const formData = new FormData();
-    formData.append('file', imageBlob, 'screenshot.jpg');
-    formData.append('upload_preset', uploadPreset);
+      const formData = new FormData();
+      formData.append('file', imageBlob, 'screenshot.jpg');
+      formData.append('upload_preset', uploadPreset);
 
-    const response = await fetch(
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || 'Image upload failed.');
+      }
+
+      if (!data.secure_url) {
+        throw new Error('Cloudinary did not return an image URL.');
+      }
+
+      return data.secure_url as string;
+    }
+
+    const uploadResult = await FileSystem.uploadAsync(
       `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      uri,
       {
-        method: 'POST',
-        body: formData,
+        httpMethod: 'POST',
+        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+        fieldName: 'file',
+        mimeType: 'image/jpeg',
+        parameters: {
+          upload_preset: uploadPreset,
+        },
       }
     );
 
-    const data = await response.json();
+    const data = JSON.parse(uploadResult.body);
 
-    if (!response.ok) {
+    if (uploadResult.status < 200 || uploadResult.status >= 300) {
       throw new Error(data.error?.message || 'Image upload failed.');
     }
 
@@ -73,74 +100,44 @@ const uploadToCloudinary = async (uri: string) => {
     }
 
     return data.secure_url as string;
-  }
+  };
 
-  const uploadResult = await FileSystem.uploadAsync(
-    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-    uri,
-    {
-      httpMethod: 'POST',
-      uploadType: FileSystem.FileSystemUploadType.MULTIPART,
-      fieldName: 'file',
-      mimeType: 'image/jpeg',
-      parameters: {
-        upload_preset: uploadPreset,
-      },
+  const sendSupportEmail = async (imageUrl: string) => {
+    const serviceId = process.env.EXPO_PUBLIC_EMAILJS_SERVICE_ID;
+    const templateId = process.env.EXPO_PUBLIC_EMAILJS_TEMPLATE_ID;
+    const publicKey = process.env.EXPO_PUBLIC_EMAILJS_PUBLIC_KEY;
+
+    if (!serviceId || !templateId || !publicKey) {
+      throw new Error('EmailJS settings are missing.');
     }
-  );
 
-  const data = JSON.parse(uploadResult.body);
-
-  if (uploadResult.status < 200 || uploadResult.status >= 300) {
-    throw new Error(data.error?.message || 'Image upload failed.');
-  }
-
-  if (!data.secure_url) {
-    throw new Error('Cloudinary did not return an image URL.');
-  }
-
-  return data.secure_url as string;
-};
-
-
-
-const sendSupportEmail = async (imageUrl: string) => {
-  const serviceId = process.env.EXPO_PUBLIC_EMAILJS_SERVICE_ID;
-  const templateId = process.env.EXPO_PUBLIC_EMAILJS_TEMPLATE_ID;
-  const publicKey = process.env.EXPO_PUBLIC_EMAILJS_PUBLIC_KEY;
-
-  if (!serviceId || !templateId || !publicKey) {
-    throw new Error('EmailJS settings are missing.');
-  }
-
-  const response = await fetch(
-    'https://api.emailjs.com/api/v1.0/email/send',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        service_id: serviceId,
-        template_id: templateId,
-        user_id: publicKey,
-        template_params: {
-          name: name,
-          reply_to: email,
-          issue_category: category,
-          message: message,
-          image_url: imageUrl,
+    const response = await fetch(
+      'https://api.emailjs.com/api/v1.0/email/send',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      }),
+        body: JSON.stringify({
+          service_id: serviceId,
+          template_id: templateId,
+          user_id: publicKey,
+          template_params: {
+            name: name,
+            reply_to: email,
+            issue_category: category,
+            message: message,
+            image_url: imageUrl,
+          },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Email could not be sent.');
     }
-  );
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || 'Email could not be sent.');
-  }
-};
-
+  };
 
   const pickImage = async () => {
     try {
@@ -169,50 +166,49 @@ const sendSupportEmail = async (imageUrl: string) => {
     }
   };
 
- const handleSubmit = async () => {
-  if (isSubmitting) return;
+  const handleSubmit = async () => {
+    if (isSubmitting) return;
 
-  if (
-    !name.trim() ||
-    !email.trim() ||
-    !category ||
-    !message.trim()
-  ) {
-    showMessage('Missing Information', 'Please complete all fields.');
-    return;
-  }
+    if (
+      !name.trim() ||
+      !email.trim() ||
+      !category ||
+      !message.trim()
+    ) {
+      showMessage('Missing Information', 'Please complete all fields.');
+      return;
+    }
 
-  if (!email.includes('@')) {
-    showMessage('Invalid Email', 'Please enter a valid email address.');
-    return;
-  }
+    if (!email.includes('@')) {
+      showMessage('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
 
-  if (!imageUri) {
-    showMessage('Screenshot Required', 'Please upload a screenshot.');
-    return;
-  }
+    if (!imageUri) {
+      showMessage('Screenshot Required', 'Please upload a screenshot.');
+      return;
+    }
 
-  try {
-    setIsSubmitting(true);
+    try {
+      setIsSubmitting(true);
 
-    const imageUrl = await uploadToCloudinary(imageUri);
+      const imageUrl = await uploadToCloudinary(imageUri);
 
-    await sendSupportEmail(imageUrl);
+      await sendSupportEmail(imageUrl);
 
-    showMessage(
-      'Request Sent!',
-      'Your support request and screenshot were successfully sent.'
-    );
-  } catch (error) {
-    showMessage(
-      'Submission Failed',
-      error instanceof Error ? error.message : 'Something went wrong.'
-    );
-  } finally {
-    setIsSubmitting(false);
-  }
-};
-
+      showMessage(
+        'Request Sent!',
+        'Your support request and screenshot were successfully sent.'
+      );
+    } catch (error) {
+      showMessage(
+        'Submission Failed',
+        error instanceof Error ? error.message : 'Something went wrong.'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -244,6 +240,15 @@ const sendSupportEmail = async (imageUrl: string) => {
         />
 
         <Text style={styles.label}>Issue Category</Text>
+        <Text
+          style={{
+            fontSize: 12,
+            color: '#68738A',
+            marginBottom: 10,
+          }}
+        >
+          Select the category that best describes your concern.
+        </Text>
 
         <View style={styles.categoryContainer}>
           {categories.map((item) => (
@@ -275,7 +280,19 @@ const sendSupportEmail = async (imageUrl: string) => {
           textAlignVertical="top"
           value={message}
           onChangeText={setMessage}
+          maxLength={500}
         />
+
+        <Text
+          style={{
+            textAlign: 'right',
+            color: '#888',
+            fontSize: 12,
+            marginTop: 5,
+          }}
+        >
+          {message.length}/500 characters
+        </Text>
 
         <Text style={styles.label}>Screenshot Upload</Text>
 
@@ -307,34 +324,33 @@ const sendSupportEmail = async (imageUrl: string) => {
           </View>
         )}
 
-<TouchableOpacity
-  style={[
-    styles.submitButton,
-    isSubmitting && { opacity: 0.6 }
-  ]}
-  onPress={handleSubmit}
-  disabled={isSubmitting}
->
-  {isSubmitting ? (
-    <>
-      <ActivityIndicator color="#FFFFFF" />
-      <Text style={styles.submitButtonText}>
-        Submitting...
-      </Text>
-    </>
-  ) : (
-    <Text style={styles.submitButtonText}>
-      Submit Request
-    </Text>
-  )}
-</TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.submitButton,
+            isSubmitting && { opacity: 0.6 }
+          ]}
+          onPress={handleSubmit}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <>
+              <ActivityIndicator color="#FFFFFF" />
+              <Text style={styles.submitButtonText}>
+                Submitting...
+              </Text>
+            </>
+          ) : (
+            <Text style={styles.submitButtonText}>
+              Submit Request
+            </Text>
+          )}
+        </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-
   container: {
     flex: 1,
     backgroundColor: '#F4F6FB',
