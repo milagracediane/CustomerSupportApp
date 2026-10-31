@@ -1,6 +1,8 @@
 # Customer Support Form App
 
-A mobile application developed using React Native and Expo that allows users to submit customer support concerns through a form. Users can provide their contact information, select an issue category, write a message, and attach a screenshot.
+A mobile application developed using **React Native and Expo** that allows users to submit customer support concerns through a digital form. Users can provide their contact information, select an issue category, write a message, and attach a screenshot for reference.
+
+The application uses **Cloudinary** to upload screenshots and **EmailJS** to send support requests to the designated support team.
 
 ## Features
 
@@ -10,50 +12,55 @@ A mobile application developed using React Native and Expo that allows users to 
   - Technical Issue
   - Payment Concern
   - Other
-- Write a support message.
-- Select and preview a screenshot from the device gallery.
+- Write a customer support message.
+- Select a screenshot from the device gallery.
+- Preview, change, or remove the selected screenshot.
 - Upload screenshots to Cloudinary.
 - Send support requests through EmailJS.
-- Receive success or error notifications.
-- Display a loading indicator during submission.
+- Include a clickable screenshot link in the support email.
 - Validate form inputs before submission.
+- Display a loading indicator while processing a request.
+- Prevent duplicate submissions during processing.
+- Display success or error notifications.
 
 ## Technologies Used
 
-- React Native
-- Expo
-- TypeScript
-- Expo Image Picker
-- Cloudinary
-- EmailJS
+- **React Native** – For building the application interface.
+- **Expo** – For developing and running the application.
+- **TypeScript** – For programming language support.
+- **Expo Image Picker** – For selecting screenshots from the device gallery.
+- **Cloudinary** – For uploading and storing screenshots.
+- **EmailJS** – For sending customer support requests through email.
 
-## Installation
+## Installation and Setup
 
-1. Clone the repository:
+Follow these steps to run the application locally.
 
-   ```bash
-   git clone YOUR_GITHUB_REPOSITORY_URL
-   ```
+### 1. Clone the Repository
 
-2. Navigate to the project folder:
+```bash
+git clone https://github.com/milagracediane/CustomerSupportApp.git
+```
 
-   ```bash
-   cd CustomerSupportApp
-   ```
+### 2. Navigate to the Project Folder
 
-3. Install dependencies:
+```bash
+cd CustomerSupportApp
+```
 
-   ```bash
-   npm install
-   ```
+### 3. Install Dependencies
 
-4. Create a `.env` file in the project root and add the required configuration variables.
+```bash
+npm install
+```
 
-## Environment Configuration
+### 4. Configure Environment Variables
 
-Create a `.env` file using the variable names provided in `.env.example`.
+Create a `.env` file in the project's root directory.
 
-Required variables:
+Use the `.env.example` file as a reference and provide your own configuration values.
+
+Required environment variables:
 
 ```env
 EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
@@ -63,11 +70,11 @@ EXPO_PUBLIC_EMAILJS_TEMPLATE_ID=your_template_id
 EXPO_PUBLIC_EMAILJS_PUBLIC_KEY=your_public_key
 ```
 
-Replace the placeholder values with your own configuration details.
+Replace the placeholder values with your actual Cloudinary and EmailJS configuration details.
 
-**Important:** Never upload your actual `.env` file or private credentials to GitHub.
+**Important:** Do not upload your actual `.env` file or private credentials to GitHub. Each developer must configure their own local `.env` file.
 
-## Running the Application
+### 5. Run the Application
 
 Start the Expo development server:
 
@@ -75,30 +82,37 @@ Start the Expo development server:
 npx expo start
 ```
 
-Scan the QR code using Expo Go to open the application on a compatible mobile device.
+- **Android:** Scan the QR code using Expo Go on a compatible device.
+- **Web:** Press `w` in the Expo terminal to open the application in a web browser.
 
 ## Application Workflow
 
-1. The user fills out the customer support form.
-2. The user selects a screenshot from the gallery.
-3. The application validates the required information.
-4. The selected screenshot is uploaded to Cloudinary.
-5. The application retrieves the screenshot's public URL.
-6. EmailJS sends the support request and screenshot URL to the configured recipient.
-7. The application displays the submission result.
+1. The user enters their name, email address, issue category, and support message.
+2. The user selects a screenshot from the device gallery.
+3. The application displays a preview of the selected screenshot.
+4. The application validates the required form inputs.
+5. The selected screenshot is uploaded to Cloudinary.
+6. After a successful upload, the application retrieves the screenshot's public URL.
+7. EmailJS sends the support request and screenshot link to the designated support team.
+8. The application displays a success or error notification.
 
-## Security
+The application prevents duplicate submissions while processing a request. If the screenshot upload fails, the support email is not sent.
 
-- Environment variables are stored in `.env`.
-- The `.env` file is excluded through `.gitignore`.
-- The `.env.example` file provides placeholder configuration values.
-- Cloudinary uses an unsigned upload preset.
+## Security and Configuration
+
+- Environment variables are configured through a local `.env` file.
+- The `.env` file is excluded from Git tracking using `.gitignore`.
+- The `.env.example` file provides placeholder configuration values for other developers.
+- Cloudinary uses an unsigned upload preset for screenshot uploads.
+- Actual configuration values must not be committed or uploaded to the public repository.
+
+**Note:** Expo public environment variables (`EXPO_PUBLIC_`) are included in the application bundle and should not contain private secrets.
 
 ## Developers
 
-- Milagrace Diane Rubio Obongen
-- Juliana Jane E. Jumawan
+- **Milagrace Diane Rubio Obongen**
+- **Juliana Jane E. Jumawan**
 
 ## Project Repository
 
-[Add your GitHub repository link here]
+[Customer Support Form App – GitHub](https://github.com/milagracediane/CustomerSupportApp)
